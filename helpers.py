@@ -61,3 +61,10 @@ def lookup(symbol):
 def usd(value):
     """Format value as USD."""
     return f"${value:,.2f}"
+
+def change(new, old):
+    diff = (new - old) / old * 100
+
+    return f"{diff:,.1f}"
+
+

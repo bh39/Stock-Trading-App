@@ -8,7 +8,7 @@ from tempfile import mkdtemp
 from werkzeug.exceptions import default_exceptions, HTTPException, InternalServerError
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
-from helpers import apology, login_required, lookup, usd
+from helpers import apology, login_required, lookup, usd, change
 
 # Configure application
 app = Flask(__name__)
@@ -60,10 +60,19 @@ def index():
     user_id = session['user_id']
     user = Users.query.filter_by(id=user_id).first()
     my_stocks = StockHoldings.query.filter_by(id=user_id).all()
+    total = 0
     for stock in my_stocks:
-        stock.worth = float(lookup(stock.symbol)['price']) * stock.shares
-        stock.worth = usd(stock.worth)
-    return render_template('index.html', stocks=my_stocks, cash=usd(user.cash))
+        stock.current_price = usd(float(lookup(stock.symbol)['price']))
+        worth = float(lookup(stock.symbol)['price']) * stock.shares
+        stock.worth = usd(worth)
+        stock.average_price_per_share = usd(stock.purchase_total / stock.shares)
+        stock.change = change(worth, stock.purchase_total)
+        stock.purchase_total = usd(stock.purchase_total)
+        total += worth
+
+    total += user.cash
+    total = usd(total)
+    return render_template('index.html', stocks=my_stocks, cash=usd(user.cash), total=total)
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -95,10 +104,11 @@ def buy():
             user.cash -= price * shares
             stock_holding = StockHoldings.query.filter_by(id=user_id, symbol=symbol).first()
             if not stock_holding:
-                new_stock_holding = StockHoldings(timestamp=datetime.now(), id=user_id, shares=shares, symbol=symbol, name = stock_info['name'])
+                new_stock_holding = StockHoldings(timestamp=datetime.now(), id=user_id, shares=shares, symbol=symbol, name = stock_info['name'], purchase_total = price * shares)
                 db.session.add(new_stock_holding)
             else:
                 stock_holding.shares += shares
+                stock_holding.purchase_total += price * shares
             db.session.commit()
             return render_template('buy_success.html', name=stock_info['name'], symbol=symbol, price=usd(price),
                                    cash=usd(user.cash))
@@ -113,6 +123,7 @@ def history():
     user_id = session['user_id']
     histories = Transactions.query.filter_by(id=user_id).order_by(desc(Transactions.timestamp)).all()
     for history in histories:
+        history.timestamp = history.timestamp.strftime("%m/%d/%Y %H:%M:%S")
         history.price = usd(history.price)
     return render_template('history.html', user=user_id, histories=histories)
 
@@ -183,6 +194,10 @@ def quote():
     return render_template("quote.html")
 
 
+@app.route("/chart", methods=["GET", "POST"])
+def chart():
+    return apology("TODO", 404)
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     """Register user"""
@@ -216,7 +231,40 @@ def register():
 @login_required
 def sell():
     """Sell shares of stock"""
-    return apology("TODO")
+    user_id = session['user_id']
+    if request.method == "POST":
+        symbol = request.form.get('symbols')
+        shares = int(request.form.get('shares'))
+        if not symbol:
+            return apology("invalid symbol", 403)
+        elif not shares:
+            return apology("invalid shares", 403)
+
+        current_holding = StockHoldings.query.filter_by(id=user_id, symbol=symbol).first()
+        if not current_holding:
+            return apology("you do not own shares of this stock", 403)
+        if current_holding.shares < shares:
+            return apology("selling more shares than you own", 403)
+        else:
+            current_holding.shares -= shares
+            if current_holding.shares == 0:
+                db.session.delete(current_holding)
+            stock_info = lookup(symbol)
+            price = float(stock_info['price'])
+            user = Users.query.filter_by(id=user_id).first()
+            user.cash += price * shares
+            new_transaction = Transactions(timestamp=datetime.now(), id=user_id, type='SELL', symbol=symbol,
+                                           shares=shares, price=price)
+            db.session.add(new_transaction)
+            db.session.commit()
+            return render_template('sell_success.html', name = stock_info['name'], symbol = symbol, price = price, cash = usd(user.cash))
+
+    my_stocks = []
+    my_stock_holding = StockHoldings.query.filter_by(id = user_id).all()
+    for stock in my_stock_holding:
+        my_stocks.append(stock.symbol)
+    print(my_stocks)
+    return render_template('sell.html', stocks=my_stocks)
 
 
 def errorhandler(e):

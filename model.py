@@ -29,4 +29,6 @@ class StockHoldings(db.Model):
     shares = db.Column(db.Integer)
     symbol = db.Column(db.String)
     name = db.Column(db.String)
+    purchase_total = db.Column(db.Integer)
+
 

@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}
+   Sell Success
+{% endblock %}
+
+{% block main %}
+    <form action="/quote" method="post">
+        <div>
+            You sold {{ shares }} shares of {{ name }} at {{ price }} per share.
+        </div>
+
+        <div>
+            Cash Remaining: {{ cash }}
+        </div>
+
+    </form>
+{% endblock %}

@@ -1,14 +1,18 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Buy
+    Sell
 {% endblock %}
 
 {% block main %}
-    <form action="/buy" method="post">
+    <form action="/sell" method="post">
         <div class="form-group">
             <lable>Symbol: &ensp;</lable>
-            <input autocomplete="off" autofocus class="form-control" name="quote" placeholder="AAPL" type="text">
+            <select name="symbols" id="symbols" class="form-control">
+                {% for stock in stocks %}
+                    <option value = "{{ stock }}"> {{ stock }} </option>
+                {% endfor %}
+            </select>
         </div>
         <div class="form-group">
             <lable>Shares: &ensp;</lable>
@@ -16,6 +20,6 @@
             <input autocomplete="off" type="number" class="form-control" min = 0 name="shares" type="text">
         </div>
 
-        <button class="btn btn-primary" type="submit">Buy</button>
+        <button class="btn btn-primary" type="submit">Sell</button>
     </form>
 {% endblock %}

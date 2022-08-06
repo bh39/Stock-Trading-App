@@ -12,7 +12,11 @@
             <th scope="col">Symbol</th>
             <th scope="col">Name</th>
             <th scope="col">Shares</th>
-            <th scope="col">Total</th>
+            <th scope="col">Average Purchase Price</th>
+            <th scope="col">Purchase Total</th>
+            <th scope="col">Current Price</th>
+            <th scope="col">Current Total</th>
+            <th scope="col">Difference</th>
           </tr>
         </thead>
         <tbody>
@@ -21,14 +25,37 @@
               <td>{{ stock.symbol }}</td>
               <td>{{ stock.name }}</td>
               <td>{{ stock.shares }}</td>
+              <td>{{ stock.average_price_per_share }}</td>
+              <td>{{ stock.purchase_total}}</td>
+              <td>{{ stock.current_price }}</td>
               <td>{{ stock.worth }}</td>
+              {% if stock.change.startswith('-') %}
+                <td style="color:red;">&#8595;{{ stock.change }}%</td>
+              {% else %}
+                <td style="color:green;">&#8593;{{ stock.change }}%</td>
+              {% endif %}
+
           </tr>
           {% endfor %}
           <tr>
               <td>CASH</td>
               <td></td>
               <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
               <td>{{cash}}</td>
+              <td></td>
+          </tr>
+          <tr>
+              <td>TOTAL</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>{{total}}</td>
+              <td></td>
           </tr>
         </tbody>
 
